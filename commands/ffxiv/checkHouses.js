@@ -1,4 +1,4 @@
-const {SlashCommandBuilder} = require('discord.js');
+const {SlashCommandBuilder, EmbedBuilder} = require('discord.js');
 const wait = require('node:timers/promises').setTimeout;
 
 module.exports = {
@@ -21,33 +21,13 @@ module.exports = {
                 )),
     async execute(interaction) {
         const world = interaction.options.getString("world");
-        await interaction.reply(`Checking for houses on ${world}...`);
+        await interaction.deferReply(`Checking for houses...`);
         try {
             const data = await getHouses(world);
-            let housesPerDisctrict = {
-                "Mist": 0,
-                "The Lavender Beds": 0,
-                "The Goblet": 0,
-                "Shirogane": 0,
-                "Empyreum": 0,
-            }
-
-            const districts = data.districts;
-            for (const district of districts) {
-                const openPlots = district.open_plots;
-                housesPerDisctrict[district.name] = openPlots.length;
-            }
-
-            await interaction.editReply(`There are ${data.num_open_plots} houses available on ${data.name}!\n
-                Mist: ${housesPerDisctrict["Mist"]}\n
-                The Lavender Beds: ${housesPerDisctrict["The Lavender Beds"]}\n
-                The Goblet: ${housesPerDisctrict["The Goblet"]}\n
-                Shirogane: ${housesPerDisctrict["Shirogane"]}\n
-                Empyreum: ${housesPerDisctrict["Empyreum"]}\n
-                `);
+            await interaction.followUp({embeds: [embedMessage(data)]});
         }catch (error) {
             console.error(error);
-            await interaction.editReply(error);
+            await interaction.followUp(error);
         }
     },
 }
@@ -69,4 +49,17 @@ async function getHouses(worldId){
         console.error(error);
         throw error;
     }
+}
+
+function embedMessage(data) {
+    return new EmbedBuilder()
+        .setTitle(`There are ${data.num_open_plots} houses available on ${data.name}!`)
+        .setColor("#ee00ff")
+        .addFields([
+            {name: "Mist", value: `${data.districts[0].open_plots.length}`},
+            {name: "The Lavender Beds", value: `${data.districts[1].open_plots.length}`},
+            {name: "The Goblet", value: `${data.districts[2].open_plots.length}`},
+            {name: "Shirogane", value: `${data.districts[3].open_plots.length}`},
+            {name: "Empyreum", value: `${data.districts[4].open_plots.length}`},
+        ])
 }
